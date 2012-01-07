@@ -17,6 +17,8 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
 public class GreenWallPaperService extends WallpaperService {
@@ -26,7 +28,9 @@ public class GreenWallPaperService extends WallpaperService {
         return new GreenEngine();
     }
 
-    private class GreenEngine extends Engine {
+    private class GreenEngine extends Engine implements
+            GestureDetector.OnGestureListener,
+            GestureDetector.OnDoubleTapListener {
 
         private int                                width;
         private int                                height;
@@ -35,8 +39,12 @@ public class GreenWallPaperService extends WallpaperService {
 
         private Map<String, WeakReference<Bitmap>> cache = new HashMap<String, WeakReference<Bitmap>>();
 
+        private GestureDetector                    detector;
+
         public GreenEngine() {
             super();
+
+            detector = new GestureDetector(getApplicationContext(), this);
         }
 
         private int getXOffset() {
@@ -143,6 +151,61 @@ public class GreenWallPaperService extends WallpaperService {
             this.width = width;
             this.height = height;
             super.onSurfaceChanged(holder, format, width, height);
+        }
+
+        @Override
+        public void onTouchEvent(MotionEvent event) {
+            super.onTouchEvent(event);
+            detector.onTouchEvent(event);
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            screen = 1;
+            draw();
+            return true;
+        }
+
+        @Override
+        public boolean onDoubleTapEvent(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
+                float velocityY) {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2,
+                float distanceX, float distanceY) {
+            return false;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            return false;
         }
     }
 

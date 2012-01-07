@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
@@ -27,7 +28,10 @@ import android.widget.TextView;
 public class Setting extends PreferenceActivity implements
         OnPreferenceChangeListener, OnPreferenceClickListener {
 
-    HashMap<String, Preference> screenImagePrefs = new HashMap<String, Preference>();
+    HashMap<String, Preference>     screenImagePrefs = new HashMap<String, Preference>();
+    private PreferenceScreen        screenImages;
+    private ListPreference          randomImageFolder;
+    private HashMap<String, String> buckets          = new HashMap<String, String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,11 +52,75 @@ public class Setting extends PreferenceActivity implements
         screen.setOnPreferenceChangeListener(this);
         root.addPreference(screen);
 
-        PreferenceScreen screenImages = getPreferenceManager()
-                .createPreferenceScreen(this);
-        screenImages.setTitle(R.string.screen_images_title);
-        int screenCount = Integer.valueOf(pref.getString(
-                Const.KEY_SCREEN_COUNT, Const.SCREEN_COUNT_DEFAULT));
+        ListPreference type = new ListPreference(this);
+        type.setKey(Const.KEY_VIEW_TYPE);
+        type.setTitle(R.string.view_type);
+        type.setEntries(R.array.view_type_entries);
+        type.setEntryValues(R.array.view_type_entry_values);
+        type.setSummary(pref.getString(Const.KEY_VIEW_TYPE,
+                Const.VIEW_TYPE_MANUAL).equals(Const.VIEW_TYPE_MANUAL) ? getResources()
+                .getStringArray(R.array.view_type_entries)[0] : getResources()
+                .getStringArray(R.array.view_type_entries)[1]);
+        type.setDefaultValue(Const.VIEW_TYPE_MANUAL);
+        type.setOnPreferenceChangeListener(this);
+        root.addPreference(type);
+
+        if (pref.getString(Const.KEY_VIEW_TYPE, Const.VIEW_TYPE_MANUAL).equals(
+                Const.VIEW_TYPE_MANUAL)) {
+            setupScreenImagesPreference(pref, 0);
+            root.addPreference(screenImages);
+        } else {
+            setupRandomImageFolderPreference(pref);
+            root.addPreference(randomImageFolder);
+        }
+
+        setPreferenceScreen(root);
+    }
+
+    private void setupRandomImageFolderPreference(SharedPreferences pref) {
+        if (randomImageFolder == null) {
+            randomImageFolder = new ListPreference(this);
+            randomImageFolder.setKey(Const.KEY_BUCKET);
+            randomImageFolder.setTitle(R.string.random_image_folder);
+            randomImageFolder.setOnPreferenceChangeListener(this);
+        }
+        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        Cursor c = managedQuery(uri, null, null, null, null);
+        buckets.clear();
+        c.moveToFirst();
+        for (int i = 0; i < c.getCount(); i++) {
+            String bucket_id = c
+                    .getString(c.getColumnIndexOrThrow("bucket_id"));
+            String bucket_name = c.getString(c
+                    .getColumnIndexOrThrow("bucket_display_name"));
+            buckets.put(bucket_id, bucket_name);
+
+            c.moveToNext();
+        }
+        /*
+         * for (String bid : buckets.keySet()) { CheckBoxPreference p = new
+         * CheckBoxPreference(Setting.this); p.setTitle(buckets.get(bid));
+         * randomImageFolder.addPreference(p); }
+         */
+        randomImageFolder.setEntries(buckets.values().toArray(new String[] {}));
+        randomImageFolder.setEntryValues(buckets.keySet().toArray(
+                new String[] {}));
+        randomImageFolder
+                .setSummary(pref.getString(Const.KEY_BUCKET, null) != null ? buckets
+                        .get(pref.getString(Const.KEY_BUCKET, null)) : "");
+    }
+
+    private void setupScreenImagesPreference(SharedPreferences pref,
+            int screenCount) {
+        if (screenImages == null) {
+            screenImages = getPreferenceManager().createPreferenceScreen(this);
+            screenImages.setTitle(R.string.screen_images_title);
+        }
+        screenImages.removeAll();
+        if (screenCount == 0) {
+            screenCount = Integer.valueOf(pref.getString(
+                    Const.KEY_SCREEN_COUNT, Const.SCREEN_COUNT_DEFAULT));
+        }
         for (int i = 0; i < screenCount; i++) {
             ScreenImagePreference preference = new ScreenImagePreference(this);
             preference.setKey(Const.KEY_SCREEN_IMAGE + (i + 1));
@@ -63,9 +131,6 @@ public class Setting extends PreferenceActivity implements
             screenImagePrefs.put(preference.getKey(), preference);
             screenImages.addPreference(preference);
         }
-        root.addPreference(screenImages);
-
-        setPreferenceScreen(root);
     }
 
     @Override
@@ -85,7 +150,39 @@ public class Setting extends PreferenceActivity implements
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         if (newValue != null) {
-            preference.setSummary((CharSequence) newValue);
+            SharedPreferences pref = PreferenceManager
+                    .getDefaultSharedPreferences(getApplicationContext());
+
+            if (preference.getKey().equals(Const.KEY_SCREEN_COUNT)) {
+                int num = 0;
+
+                try {
+                    num = Integer.valueOf((String) newValue);
+                    if (num <= 0) {
+                        throw new Exception();
+                    }
+                } catch (Exception e) {
+                    newValue = Const.SCREEN_COUNT_DEFAULT;
+                    Editor editor = pref.edit();
+                    editor.putString(Const.KEY_SCREEN_COUNT,
+                            Const.SCREEN_COUNT_DEFAULT);
+                    editor.commit();
+                    return false;
+                }
+                preference.setSummary((CharSequence) newValue);
+                setupScreenImagesPreference(pref, num);
+            } else if (preference.getKey().equals(Const.KEY_VIEW_TYPE)) {
+                preference
+                        .setSummary(newValue.equals(Const.VIEW_TYPE_MANUAL) ? getResources()
+                                .getStringArray(R.array.view_type_entries)[0]
+                                : getResources().getStringArray(
+                                        R.array.view_type_entries)[1]);
+
+            } else if (preference.getKey().equals(Const.KEY_BUCKET)) {
+                preference.setSummary(buckets.get(newValue));
+
+            }
+
             return true;
         }
         return false;
