@@ -2,6 +2,9 @@ package net.fushihara.green;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -25,10 +28,12 @@ public class GreenWallPaperService extends WallpaperService {
 
     private class GreenEngine extends Engine {
 
-        private int width;
-        private int height;
+        private int                                width;
+        private int                                height;
 
-        private int screen;
+        private int                                screen;
+
+        private Map<String, WeakReference<Bitmap>> cache = new HashMap<String, WeakReference<Bitmap>>();
 
         public GreenEngine() {
             super();
@@ -68,8 +73,19 @@ public class GreenWallPaperService extends WallpaperService {
                             + screen, null);
                     if (imageUri != null) {
                         try {
-                            Bitmap image = MediaStore.Images.Media.getBitmap(
-                                    getContentResolver(), Uri.parse(imageUri));
+                            WeakReference<Bitmap> imageCache = cache
+                                    .get(imageUri);
+                            Bitmap image = null;
+                            if (imageCache != null) {
+                                image = imageCache.get();
+                            }
+                            if (image == null) {
+                                image = MediaStore.Images.Media.getBitmap(
+                                        getContentResolver(),
+                                        Uri.parse(imageUri));
+                                cache.put(imageUri, new WeakReference<Bitmap>(
+                                        image));
+                            }
                             Matrix matrix = new Matrix();
                             float xScale = (float) getDesiredMinimumWidth()
                                     / image.getWidth();
@@ -107,10 +123,14 @@ public class GreenWallPaperService extends WallpaperService {
                 int yPixelOffset) {
 
             Log.d("Green", xPixelOffset + "," + yPixelOffset);
-            screen = getScreenCount() - (width + xPixelOffset) / getXOffset();
+            int newScreen = getScreenCount() - (width + xPixelOffset)
+                    / getXOffset();
             Log.d("Green", "screen:" + screen);
 
-            draw();
+            if (screen != newScreen) {
+                screen = newScreen;
+                draw();
+            }
 
             super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep,
                     xPixelOffset, yPixelOffset);
