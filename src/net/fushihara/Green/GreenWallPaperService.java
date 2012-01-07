@@ -1,10 +1,16 @@
 package net.fushihara.green;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -13,24 +19,18 @@ public class GreenWallPaperService extends WallpaperService {
 
     @Override
     public Engine onCreateEngine() {
-        // TODO 自動生成されたメソッド・スタブ
         return new GreenEngine();
     }
 
     private class GreenEngine extends Engine {
 
-        private int               width;
-        private int               height;
+        private int width;
+        private int height;
 
-        private int               screen;
-
-        private SharedPreferences pref;
+        private int screen;
 
         public GreenEngine() {
             super();
-
-            pref = PreferenceManager
-                    .getDefaultSharedPreferences(getApplicationContext());
         }
 
         private int getXOffset() {
@@ -38,6 +38,9 @@ public class GreenWallPaperService extends WallpaperService {
         }
 
         private int getScreenCount() {
+            SharedPreferences pref = PreferenceManager
+                    .getDefaultSharedPreferences(getApplicationContext());
+
             return Integer.valueOf(pref.getString(Const.KEY_SCREEN_COUNT,
                     Const.SCREEN_COUNT_DEFAULT));
         }
@@ -54,7 +57,28 @@ public class GreenWallPaperService extends WallpaperService {
                     Paint p = new Paint();
                     p.setColor(Color.BLUE);
                     p.setTextSize(80);
-                    c.drawText(String.valueOf(screen), width / 2, height / 2, p);
+
+                    SharedPreferences pref = PreferenceManager
+                            .getDefaultSharedPreferences(getApplicationContext());
+
+                    Log.d("Green", "get: " + Const.KEY_SCREEN_IMAGE + screen);
+
+                    String imageUri = pref.getString(Const.KEY_SCREEN_IMAGE
+                            + screen, null);
+                    if (imageUri != null) {
+                        try {
+                            Bitmap image = MediaStore.Images.Media.getBitmap(
+                                    getContentResolver(), Uri.parse(imageUri));
+                            c.drawBitmap(image, 0, 0, p);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        c.drawText(String.valueOf(screen), width / 2,
+                                height / 2, p);
+                    }
                 }
             } finally {
                 if (c != null) {

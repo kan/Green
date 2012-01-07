@@ -3,5 +3,9 @@
 
     <string name="app_name">SimpleMultiWallpaper</string>
     <string name="screen_count">HOME画面のスクリーン数</string>
+    <string name="screen_images_title">スクリーン毎の画像</string>
+    <string name="screen_image">スクリーン%dの画像</string>
+    <string name="thumbnail"></string>
 
+    
 </resources>
