@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.preference.PreferenceManager;
@@ -69,7 +70,20 @@ public class GreenWallPaperService extends WallpaperService {
                         try {
                             Bitmap image = MediaStore.Images.Media.getBitmap(
                                     getContentResolver(), Uri.parse(imageUri));
-                            c.drawBitmap(image, 0, 0, p);
+                            Matrix matrix = new Matrix();
+                            float xScale = (float) getDesiredMinimumWidth()
+                                    / image.getWidth();
+                            float yScale = (float) getDesiredMinimumHeight()
+                                    / image.getHeight();
+                            if (xScale > yScale) {
+                                matrix.postScale(yScale, yScale);
+                            } else {
+                                matrix.postScale(xScale, xScale);
+                            }
+                            p.setAntiAlias(true);
+                            p.setFilterBitmap(true);
+                            p.setDither(true);
+                            c.drawBitmap(image, matrix, p);
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
