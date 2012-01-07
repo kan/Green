@@ -1,8 +1,10 @@
-package net.fushihara.Green;
+package net.fushihara.green;
 
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -17,15 +19,27 @@ public class GreenWallPaperService extends WallpaperService {
 
     private class GreenEngine extends Engine {
 
-        private final int SCREEN = 5;
+        private int               width;
+        private int               height;
 
-        private int       width;
-        private int       height;
+        private int               screen;
 
-        private int       screen;
+        private SharedPreferences pref;
+
+        public GreenEngine() {
+            super();
+
+            pref = PreferenceManager
+                    .getDefaultSharedPreferences(getApplicationContext());
+        }
 
         private int getXOffset() {
-            return width / (SCREEN - 1);
+            return width / (getScreenCount() - 1);
+        }
+
+        private int getScreenCount() {
+            return Integer.valueOf(pref.getString(Const.KEY_SCREEN_COUNT,
+                    Const.SCREEN_COUNT_DEFAULT));
         }
 
         private void draw() {
@@ -55,7 +69,7 @@ public class GreenWallPaperService extends WallpaperService {
                 int yPixelOffset) {
 
             Log.d("Green", xPixelOffset + "," + yPixelOffset);
-            screen = SCREEN - (width + xPixelOffset) / getXOffset();
+            screen = getScreenCount() - (width + xPixelOffset) / getXOffset();
             Log.d("Green", "screen:" + screen);
 
             draw();

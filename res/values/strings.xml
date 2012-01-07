@@ -2,5 +2,6 @@
 <resources>
 
     <string name="app_name">SimpleMultiWallpaper</string>
+    <string name="screen_count">HOME画面のスクリーン数</string>
 
 </resources>

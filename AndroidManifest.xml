@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="net.fushihara.Green"
+    package="net.fushihara.green"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -11,7 +11,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name" >
         <service
-            android:name="GreenWallPaperService"
+            android:name="net.fushihara.green.GreenWallPaperService"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_WALLPAPER">
             <intent-filter>
@@ -19,6 +19,11 @@
             </intent-filter>
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/wallpaper"></meta-data>
         </service>
+        <activity 
+            android:name="net.fushihara.green.Setting"
+            android:theme="@android:style/Theme.WallpaperSettings"
+            android:exported="true">
+        </activity>
     </application>
 
 </manifest>
