@@ -51,16 +51,18 @@ public class GreenWallPaperService extends WallpaperService {
             detector = new GestureDetector(getApplicationContext(), this);
         }
 
-        private int getXOffset() {
-            return width / (getScreenCount() - 1);
+        private int getXOffset(SharedPreferences pref) {
+            return width / (getScreenCount(pref) - 1);
         }
 
-        private int getScreenCount() {
-            SharedPreferences pref = PreferenceManager
-                    .getDefaultSharedPreferences(getApplicationContext());
-
+        private int getScreenCount(SharedPreferences pref) {
             return Integer.valueOf(pref.getString(Const.KEY_SCREEN_COUNT,
                     Const.SCREEN_COUNT_DEFAULT));
+        }
+
+        private boolean isEnableAnimation(SharedPreferences pref) {
+            return pref.getBoolean(Const.KEY_ENABLE_ANIMATION,
+                    Const.ENABLE_ANIMATION_DEFAULT);
         }
 
         private void draw(int offset) {
@@ -88,24 +90,37 @@ public class GreenWallPaperService extends WallpaperService {
                             Bitmap image = getBitmap(imageUri);
                             float xScale = (float) getDesiredMinimumWidth()
                                     / width;
-                            c.drawBitmap(image, -offset * xScale, 0, p);
-                            if (offset < 0) {
-                                String lImgUri = getImageUri(pref, screen - 1);
-                                if (lImgUri != null) {
-                                    Bitmap leftImage = getBitmap(lImgUri);
-                                    c.drawBitmap(leftImage,
-                                            -1 * leftImage.getWidth()
-                                                    - (offset * xScale), 0, p);
+                            if (isEnableAnimation(pref)) {
+                                if (offset < 0) {
+                                    String lImgUri = getImageUri(pref,
+                                            screen - 1);
+                                    if (lImgUri != null) {
+                                        Bitmap leftImage = getBitmap(lImgUri);
+                                        c.drawBitmap(leftImage,
+                                                -1 * leftImage.getWidth()
+                                                        - (offset * xScale), 0,
+                                                p);
+                                    }
+                                } else if (offset > 0) {
+                                    String rImgUri = getImageUri(pref,
+                                            screen + 1);
+                                    if (rImgUri != null) {
+                                        Bitmap rightImage = getBitmap(rImgUri);
+                                        c.drawBitmap(rightImage,
+                                                rightImage.getWidth()
+                                                        - (offset * xScale), 0,
+                                                p);
+                                    }
                                 }
+                                c.drawBitmap(image, -offset * xScale, 0, p);
+                            } else {
+                                c.drawBitmap(image, 0, 0, p);
                             }
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    } else {
-                        c.drawText(String.valueOf(screen), width / 2,
-                                height / 2, p);
                     }
                 }
             } finally {
@@ -151,7 +166,7 @@ public class GreenWallPaperService extends WallpaperService {
                     .equals(Const.VIEW_TYPE_MANUAL)) {
                 imageUri = pref.getString(Const.KEY_SCREEN_IMAGE + s, null);
             } else {
-                if (imageMap.size() < getScreenCount()) {
+                if (imageMap.size() < getScreenCount(pref)) {
                     reloadImageMap(pref);
                 }
                 imageUri = imageMap.get(s - 1);
@@ -174,7 +189,7 @@ public class GreenWallPaperService extends WallpaperService {
             }
             Collections.shuffle(imageMap);
             int idx = 0;
-            while (imageMap.size() < getScreenCount()) {
+            while (imageMap.size() < getScreenCount(pref)) {
                 imageMap.add(imageMap.get(idx));
                 idx++;
                 if (idx >= imageMap.size()) {
@@ -188,10 +203,13 @@ public class GreenWallPaperService extends WallpaperService {
                 float xOffsetStep, float yOffsetStep, int xPixelOffset,
                 int yPixelOffset) {
 
+            SharedPreferences pref = PreferenceManager
+                    .getDefaultSharedPreferences(getApplicationContext());
+
             Log.d("Green", xPixelOffset + "," + yPixelOffset);
-            int newScreen = getScreenCount() - (width + xPixelOffset)
-                    / getXOffset();
-            int offset = (getScreenCount() - newScreen) * getXOffset()
+            int newScreen = getScreenCount(pref) - (width + xPixelOffset)
+                    / getXOffset(pref);
+            int offset = (getScreenCount(pref) - newScreen) * getXOffset(pref)
                     - (width + xPixelOffset);
             Log.d("Green", "screen:" + screen);
 

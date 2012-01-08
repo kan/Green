@@ -3,6 +3,9 @@
 
     <string name="app_name">スクリーン別壁紙</string>
     <string name="screen_count">HOME画面のスクリーン数</string>
+    <string name="enable_animation">画面切り替え時の効果</string>
+    <string name="enable_animation_on">アニメーション有効</string>
+    <string name="enable_animation_off">アニメーション無効</string>
     <string name="screen_images_title">スクリーン毎の画像</string>
     <string name="screen_image">スクリーン%dの画像</string>
     <string name="view_type">背景画像のタイプ</string>

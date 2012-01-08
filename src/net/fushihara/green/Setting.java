@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -51,6 +52,14 @@ public class Setting extends PreferenceActivity implements
         screen.setDefaultValue(Const.SCREEN_COUNT_DEFAULT);
         screen.setOnPreferenceChangeListener(this);
         root.addPreference(screen);
+
+        CheckBoxPreference anime = new CheckBoxPreference(this);
+        anime.setKey(Const.KEY_ENABLE_ANIMATION);
+        anime.setTitle(R.string.enable_animation);
+        anime.setDefaultValue(Const.ENABLE_ANIMATION_DEFAULT);
+        anime.setSummaryOn(R.string.enable_animation_on);
+        anime.setSummaryOff(R.string.enable_animation_off);
+        root.addPreference(anime);
 
         ListPreference type = new ListPreference(this);
         type.setKey(Const.KEY_VIEW_TYPE);
