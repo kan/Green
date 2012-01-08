@@ -3,10 +3,13 @@ package net.fushihara.green;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -37,7 +40,8 @@ public class GreenWallPaperService extends WallpaperService {
 
         private int                                screen;
 
-        private Map<String, WeakReference<Bitmap>> cache = new HashMap<String, WeakReference<Bitmap>>();
+        private Map<String, WeakReference<Bitmap>> cache    = new HashMap<String, WeakReference<Bitmap>>();
+        private ArrayList<String>                  imageMap = new ArrayList<String>();
 
         private GestureDetector                    detector;
 
@@ -77,8 +81,19 @@ public class GreenWallPaperService extends WallpaperService {
 
                     Log.d("Green", "get: " + Const.KEY_SCREEN_IMAGE + screen);
 
-                    String imageUri = pref.getString(Const.KEY_SCREEN_IMAGE
-                            + screen, null);
+                    String imageUri = null;
+
+                    if (pref.getString(Const.KEY_VIEW_TYPE,
+                            Const.VIEW_TYPE_MANUAL).equals(
+                            Const.VIEW_TYPE_MANUAL)) {
+                        imageUri = pref.getString(Const.KEY_SCREEN_IMAGE
+                                + screen, null);
+                    } else {
+                        if (imageMap.size() < getScreenCount()) {
+                            reloadImageMap(pref);
+                        }
+                        imageUri = imageMap.get(screen - 1);
+                    }
                     if (imageUri != null) {
                         try {
                             WeakReference<Bitmap> imageCache = cache
@@ -125,6 +140,30 @@ public class GreenWallPaperService extends WallpaperService {
             }
         }
 
+        private void reloadImageMap(SharedPreferences pref) {
+            Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+            imageMap.clear();
+            Cursor cur = MediaStore.Images.Media.query(getContentResolver(),
+                    uri, null, "bucket_id=?",
+                    new String[] { pref.getString(Const.KEY_BUCKET, "0") },
+                    null);
+            cur.moveToFirst();
+            for (int i = 0; i < cur.getCount(); i++) {
+                String imgId = cur.getString(cur.getColumnIndexOrThrow("_id"));
+                imageMap.add(Uri.withAppendedPath(uri, imgId).toString());
+                cur.moveToNext();
+            }
+            Collections.shuffle(imageMap);
+            int idx = 0;
+            while (imageMap.size() < getScreenCount()) {
+                imageMap.add(imageMap.get(idx));
+                idx++;
+                if (idx >= imageMap.size()) {
+                    idx = 0;
+                }
+            }
+        }
+
         @Override
         public void onOffsetsChanged(float xOffset, float yOffset,
                 float xOffsetStep, float yOffsetStep, int xPixelOffset,
@@ -161,9 +200,17 @@ public class GreenWallPaperService extends WallpaperService {
 
         @Override
         public boolean onDoubleTap(MotionEvent e) {
-            screen = 1;
-            draw();
-            return true;
+            SharedPreferences pref = PreferenceManager
+                    .getDefaultSharedPreferences(getApplicationContext());
+
+            if (pref.getString(Const.KEY_VIEW_TYPE, Const.VIEW_TYPE_MANUAL)
+                    .equals(Const.VIEW_TYPE_RANDOM)) {
+                reloadImageMap(pref);
+                draw();
+                return true;
+            }
+
+            return false;
         }
 
         @Override
