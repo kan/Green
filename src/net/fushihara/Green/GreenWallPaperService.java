@@ -63,9 +63,10 @@ public class GreenWallPaperService extends WallpaperService {
                     Const.SCREEN_COUNT_DEFAULT));
         }
 
-        private void draw() {
+        private void draw(int offset) {
             final SurfaceHolder holder = getSurfaceHolder();
             Canvas c = null;
+            Log.d("Green", "offset: " + offset);
 
             try {
                 c = holder.lockCanvas();
@@ -81,48 +82,22 @@ public class GreenWallPaperService extends WallpaperService {
 
                     Log.d("Green", "get: " + Const.KEY_SCREEN_IMAGE + screen);
 
-                    String imageUri = null;
-
-                    if (pref.getString(Const.KEY_VIEW_TYPE,
-                            Const.VIEW_TYPE_MANUAL).equals(
-                            Const.VIEW_TYPE_MANUAL)) {
-                        imageUri = pref.getString(Const.KEY_SCREEN_IMAGE
-                                + screen, null);
-                    } else {
-                        if (imageMap.size() < getScreenCount()) {
-                            reloadImageMap(pref);
-                        }
-                        imageUri = imageMap.get(screen - 1);
-                    }
+                    String imageUri = getImageUri(pref, screen);
                     if (imageUri != null) {
                         try {
-                            WeakReference<Bitmap> imageCache = cache
-                                    .get(imageUri);
-                            Bitmap image = null;
-                            if (imageCache != null) {
-                                image = imageCache.get();
-                            }
-                            if (image == null) {
-                                image = MediaStore.Images.Media.getBitmap(
-                                        getContentResolver(),
-                                        Uri.parse(imageUri));
-                                cache.put(imageUri, new WeakReference<Bitmap>(
-                                        image));
-                            }
-                            Matrix matrix = new Matrix();
+                            Bitmap image = getBitmap(imageUri);
                             float xScale = (float) getDesiredMinimumWidth()
-                                    / image.getWidth();
-                            float yScale = (float) getDesiredMinimumHeight()
-                                    / image.getHeight();
-                            if (xScale > yScale) {
-                                matrix.postScale(yScale, yScale);
-                            } else {
-                                matrix.postScale(xScale, xScale);
+                                    / width;
+                            c.drawBitmap(image, -offset * xScale, 0, p);
+                            if (offset < 0) {
+                                String lImgUri = getImageUri(pref, screen - 1);
+                                if (lImgUri != null) {
+                                    Bitmap leftImage = getBitmap(lImgUri);
+                                    c.drawBitmap(leftImage,
+                                            -1 * leftImage.getWidth()
+                                                    - (offset * xScale), 0, p);
+                                }
                             }
-                            p.setAntiAlias(true);
-                            p.setFilterBitmap(true);
-                            p.setDither(true);
-                            c.drawBitmap(image, matrix, p);
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
@@ -138,6 +113,50 @@ public class GreenWallPaperService extends WallpaperService {
                     holder.unlockCanvasAndPost(c);
                 }
             }
+        }
+
+        private Bitmap getBitmap(String imageUri) throws FileNotFoundException,
+                IOException {
+            WeakReference<Bitmap> imageCache = cache.get(imageUri);
+            Bitmap image = null;
+            if (imageCache != null) {
+                image = imageCache.get();
+            }
+            if (image == null) {
+                image = MediaStore.Images.Media.getBitmap(getContentResolver(),
+                        Uri.parse(imageUri));
+                Matrix matrix = new Matrix();
+                float xScale = (float) getDesiredMinimumWidth()
+                        / image.getWidth();
+                float yScale = (float) getDesiredMinimumHeight()
+                        / image.getHeight();
+                if (xScale > yScale) {
+                    matrix.postScale(yScale, yScale);
+                } else {
+                    matrix.postScale(xScale, xScale);
+                }
+                Bitmap dist = Bitmap.createBitmap(image, 0, 0,
+                        image.getWidth(), image.getHeight(), matrix, true);
+                image.recycle();
+                image = dist;
+                cache.put(imageUri, new WeakReference<Bitmap>(image));
+            }
+            return image;
+        }
+
+        private String getImageUri(SharedPreferences pref, int s) {
+            String imageUri = null;
+
+            if (pref.getString(Const.KEY_VIEW_TYPE, Const.VIEW_TYPE_MANUAL)
+                    .equals(Const.VIEW_TYPE_MANUAL)) {
+                imageUri = pref.getString(Const.KEY_SCREEN_IMAGE + s, null);
+            } else {
+                if (imageMap.size() < getScreenCount()) {
+                    reloadImageMap(pref);
+                }
+                imageUri = imageMap.get(s - 1);
+            }
+            return imageUri;
         }
 
         private void reloadImageMap(SharedPreferences pref) {
@@ -172,12 +191,14 @@ public class GreenWallPaperService extends WallpaperService {
             Log.d("Green", xPixelOffset + "," + yPixelOffset);
             int newScreen = getScreenCount() - (width + xPixelOffset)
                     / getXOffset();
+            int offset = (getScreenCount() - newScreen) * getXOffset()
+                    - (width + xPixelOffset);
             Log.d("Green", "screen:" + screen);
 
-            if (screen != newScreen) {
-                screen = newScreen;
-                draw();
-            }
+            // if (screen != newScreen) {
+            screen = newScreen;
+            draw(offset);
+            // }
 
             super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep,
                     xPixelOffset, yPixelOffset);
@@ -206,7 +227,7 @@ public class GreenWallPaperService extends WallpaperService {
             if (pref.getString(Const.KEY_VIEW_TYPE, Const.VIEW_TYPE_MANUAL)
                     .equals(Const.VIEW_TYPE_RANDOM)) {
                 reloadImageMap(pref);
-                draw();
+                draw(0);
                 return true;
             }
 
