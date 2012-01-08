@@ -81,6 +81,14 @@ public class Setting extends PreferenceActivity implements
         } else {
             setupRandomImageFolderPreference(pref);
             root.addPreference(randomImageFolder);
+            ListPreference random_span = new ListPreference(this);
+            random_span.setKey(Const.KEY_RANDOM_SPAN);
+            random_span.setTitle(R.string.random_span);
+            random_span.setEntries(R.array.random_span_entries);
+            random_span.setEntryValues(R.array.random_span_entry_values);
+            random_span.setDefaultValue(Const.RANDOM_SPAN_DEFAULT);
+            random_span.setOnPreferenceChangeListener(this);
+            root.addPreference(random_span);
         }
 
         setPreferenceScreen(root);

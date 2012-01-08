@@ -6,11 +6,13 @@ public final class Const {
     public static final String  KEY_VIEW_TYPE            = "view_type";
     public static final String  KEY_BUCKET               = "bucket";
     public static final String  KEY_ENABLE_ANIMATION     = "enable_animation";
+    public static final String  KEY_RANDOM_SPAN          = "random_span";
 
     public static final String  VIEW_TYPE_MANUAL         = "manual";
     public static final String  VIEW_TYPE_RANDOM         = "random";
 
     public static final String  SCREEN_COUNT_DEFAULT     = "5";
+    public static final String  RANDOM_SPAN_DEFAULT      = "10000";
     public static final boolean ENABLE_ANIMATION_DEFAULT = true;
 
 }

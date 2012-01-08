@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -16,6 +17,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.net.Uri;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.service.wallpaper.WallpaperService;
@@ -25,6 +27,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
 public class GreenWallPaperService extends WallpaperService {
+    private final Handler handler = new Handler();
 
     @Override
     public Engine onCreateEngine() {
@@ -33,22 +36,38 @@ public class GreenWallPaperService extends WallpaperService {
 
     private class GreenEngine extends Engine implements
             GestureDetector.OnGestureListener,
-            GestureDetector.OnDoubleTapListener {
+            GestureDetector.OnDoubleTapListener,
+            OnSharedPreferenceChangeListener {
 
         private int                                width;
         private int                                height;
 
         private int                                screen;
+        private boolean                            visible  = true;
 
         private Map<String, WeakReference<Bitmap>> cache    = new HashMap<String, WeakReference<Bitmap>>();
         private ArrayList<String>                  imageMap = new ArrayList<String>();
 
         private GestureDetector                    detector;
 
+        private final Runnable                     drawer   = new Runnable() {
+
+                                                                @Override
+                                                                public void run() {
+                                                                    SharedPreferences pref = PreferenceManager
+                                                                            .getDefaultSharedPreferences(getApplicationContext());
+                                                                    reloadImageMap(pref);
+                                                                    draw(0);
+                                                                }
+                                                            };
+
         public GreenEngine() {
             super();
 
             detector = new GestureDetector(getApplicationContext(), this);
+            SharedPreferences pref = PreferenceManager
+                    .getDefaultSharedPreferences(getApplicationContext());
+            pref.registerOnSharedPreferenceChangeListener(this);
         }
 
         private int getXOffset(SharedPreferences pref) {
@@ -115,6 +134,18 @@ public class GreenWallPaperService extends WallpaperService {
                                 c.drawBitmap(image, -offset * xScale, 0, p);
                             } else {
                                 c.drawBitmap(image, 0, 0, p);
+                            }
+                            handler.removeCallbacks(drawer);
+                            if (pref.getString(Const.KEY_VIEW_TYPE,
+                                    Const.VIEW_TYPE_MANUAL).equals(
+                                    Const.VIEW_TYPE_RANDOM)
+                                    && !pref.getString(Const.KEY_RANDOM_SPAN,
+                                            Const.RANDOM_SPAN_DEFAULT).equals(
+                                            "0")) {
+                                handler.postDelayed(drawer, Integer
+                                        .valueOf(pref.getString(
+                                                Const.KEY_RANDOM_SPAN,
+                                                Const.RANDOM_SPAN_DEFAULT)));
                             }
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
@@ -196,6 +227,32 @@ public class GreenWallPaperService extends WallpaperService {
                     idx = 0;
                 }
             }
+        }
+
+        @Override
+        public void onDestroy() {
+            handler.removeCallbacks(drawer);
+            super.onDestroy();
+        }
+
+        @Override
+        public void onSurfaceDestroyed(SurfaceHolder holder) {
+            super.onSurfaceDestroyed(holder);
+            visible = false;
+            handler.removeCallbacks(drawer);
+        }
+
+        @Override
+        public void onVisibilityChanged(boolean visible) {
+            this.visible = visible;
+            if (visible) {
+                if (screen > 0) {
+                    draw(0);
+                }
+            } else {
+                handler.removeCallbacks(drawer);
+            }
+            super.onVisibilityChanged(visible);
         }
 
         @Override
@@ -292,6 +349,12 @@ public class GreenWallPaperService extends WallpaperService {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
             return false;
+        }
+
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences pref, String key) {
+            handler.removeCallbacks(drawer);
+            draw(0);
         }
     }
 

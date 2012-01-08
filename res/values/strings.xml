@@ -10,6 +10,7 @@
     <string name="screen_image">スクリーン%dの画像</string>
     <string name="view_type">背景画像のタイプ</string>
     <string name="random_image_folder">表示する画像グループの選択</string>
+    <string name="random_span">自動更新の間隔</string>
     <string name="thumbnail"></string>
     
     <string-array name="view_type_entries">
@@ -19,6 +20,26 @@
     <string-array name="view_type_entry_values">
         <item>manual</item>
         <item>random</item>
+    </string-array>
+    
+    <string-array name="random_span_entries">
+        <item>自動更新なし</item>
+        <item>10秒</item>
+        <item>10分</item>
+        <item>1時間</item>
+        <item>6時間</item>
+        <item>12時間</item>
+        <item>1日</item>
+    </string-array>
+    
+    <string-array name="random_span_entry_values">
+        <item>0</item>
+        <item>10000</item>
+        <item>600000</item>
+        <item>3600000</item>
+        <item>21600000</item>
+        <item>43200000</item>
+        <item>86400000</item>
     </string-array>
     
 </resources>
