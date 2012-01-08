@@ -32,6 +32,7 @@ public class Setting extends PreferenceActivity implements
     HashMap<String, Preference>     screenImagePrefs = new HashMap<String, Preference>();
     private PreferenceScreen        screenImages;
     private ListPreference          randomImageFolder;
+    private ListPreference          randomSpan;
     private HashMap<String, String> buckets          = new HashMap<String, String>();
 
     @Override
@@ -81,17 +82,23 @@ public class Setting extends PreferenceActivity implements
         } else {
             setupRandomImageFolderPreference(pref);
             root.addPreference(randomImageFolder);
-            ListPreference random_span = new ListPreference(this);
-            random_span.setKey(Const.KEY_RANDOM_SPAN);
-            random_span.setTitle(R.string.random_span);
-            random_span.setEntries(R.array.random_span_entries);
-            random_span.setEntryValues(R.array.random_span_entry_values);
-            random_span.setDefaultValue(Const.RANDOM_SPAN_DEFAULT);
-            random_span.setOnPreferenceChangeListener(this);
-            root.addPreference(random_span);
+            setupRandomSpan();
+            root.addPreference(randomSpan);
         }
 
         setPreferenceScreen(root);
+    }
+
+    private void setupRandomSpan() {
+        if (randomSpan == null) {
+            randomSpan = new ListPreference(this);
+            randomSpan.setKey(Const.KEY_RANDOM_SPAN);
+            randomSpan.setTitle(R.string.random_span);
+            randomSpan.setEntries(R.array.random_span_entries);
+            randomSpan.setEntryValues(R.array.random_span_entry_values);
+            randomSpan.setDefaultValue(Const.RANDOM_SPAN_DEFAULT);
+            randomSpan.setOnPreferenceChangeListener(this);
+        }
     }
 
     private void setupRandomImageFolderPreference(SharedPreferences pref) {
@@ -189,11 +196,30 @@ public class Setting extends PreferenceActivity implements
                 preference.setSummary((CharSequence) newValue);
                 setupScreenImagesPreference(pref, num);
             } else if (preference.getKey().equals(Const.KEY_VIEW_TYPE)) {
-                preference
-                        .setSummary(newValue.equals(Const.VIEW_TYPE_MANUAL) ? getResources()
-                                .getStringArray(R.array.view_type_entries)[0]
-                                : getResources().getStringArray(
-                                        R.array.view_type_entries)[1]);
+                try {
+                    getPreferenceScreen().removePreference(screenImages);
+                } catch (Exception e) {
+                    // 存在しないとエラーになるので
+                }
+                try {
+                    getPreferenceScreen().removePreference(randomImageFolder);
+                    getPreferenceScreen().removePreference(randomSpan);
+                } catch (Exception e) {
+                    // 存在しないとエラーになるので
+                }
+                if (newValue.equals(Const.VIEW_TYPE_MANUAL)) {
+                    preference.setSummary(getResources().getStringArray(
+                            R.array.view_type_entries)[0]);
+                    setupScreenImagesPreference(pref, Integer.valueOf(pref
+                            .getString(Const.KEY_SCREEN_COUNT,
+                                    Const.SCREEN_COUNT_DEFAULT)));
+                    getPreferenceScreen().addPreference(screenImages);
+                } else {
+                    setupRandomImageFolderPreference(pref);
+                    setupRandomSpan();
+                    getPreferenceScreen().addPreference(randomImageFolder);
+                    getPreferenceScreen().addPreference(randomSpan);
+                }
 
             } else if (preference.getKey().equals(Const.KEY_BUCKET)) {
                 preference.setSummary(buckets.get(newValue));

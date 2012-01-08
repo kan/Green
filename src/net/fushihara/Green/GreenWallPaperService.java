@@ -354,7 +354,9 @@ public class GreenWallPaperService extends WallpaperService {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences pref, String key) {
             handler.removeCallbacks(drawer);
-            draw(0);
+            if (screen > 0) {
+                draw(0);
+            }
         }
     }
 
