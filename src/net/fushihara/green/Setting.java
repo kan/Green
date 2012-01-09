@@ -29,15 +29,24 @@ import android.widget.TextView;
 public class Setting extends PreferenceActivity implements
         OnPreferenceChangeListener, OnPreferenceClickListener {
 
-    HashMap<String, Preference>     screenImagePrefs = new HashMap<String, Preference>();
+    HashMap<String, Preference>     screenImagePrefs  = new HashMap<String, Preference>();
     private PreferenceScreen        screenImages;
     private ListPreference          randomImageFolder;
     private ListPreference          randomSpan;
-    private HashMap<String, String> buckets          = new HashMap<String, String>();
+    private HashMap<String, String> buckets           = new HashMap<String, String>();
+    private HashMap<String, String> randomSpanEntries = new HashMap<String, String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        String[] entries = getResources().getStringArray(
+                R.array.random_span_entries);
+        String[] entryValues = getResources().getStringArray(
+                R.array.random_span_entry_values);
+        for (int i = 0; i < entries.length; i++) {
+            randomSpanEntries.put(entryValues[i], entries[i]);
+        }
 
         SharedPreferences pref = PreferenceManager
                 .getDefaultSharedPreferences(getApplicationContext());
@@ -82,14 +91,14 @@ public class Setting extends PreferenceActivity implements
         } else {
             setupRandomImageFolderPreference(pref);
             root.addPreference(randomImageFolder);
-            setupRandomSpan();
+            setupRandomSpan(pref);
             root.addPreference(randomSpan);
         }
 
         setPreferenceScreen(root);
     }
 
-    private void setupRandomSpan() {
+    private void setupRandomSpan(SharedPreferences pref) {
         if (randomSpan == null) {
             randomSpan = new ListPreference(this);
             randomSpan.setKey(Const.KEY_RANDOM_SPAN);
@@ -99,6 +108,8 @@ public class Setting extends PreferenceActivity implements
             randomSpan.setDefaultValue(Const.RANDOM_SPAN_DEFAULT);
             randomSpan.setOnPreferenceChangeListener(this);
         }
+        randomSpan.setSummary(randomSpanEntries.get(pref.getString(
+                Const.KEY_RANDOM_SPAN, Const.RANDOM_SPAN_DEFAULT)));
     }
 
     private void setupRandomImageFolderPreference(SharedPreferences pref) {
@@ -216,13 +227,16 @@ public class Setting extends PreferenceActivity implements
                     getPreferenceScreen().addPreference(screenImages);
                 } else {
                     setupRandomImageFolderPreference(pref);
-                    setupRandomSpan();
+                    setupRandomSpan(pref);
                     getPreferenceScreen().addPreference(randomImageFolder);
                     getPreferenceScreen().addPreference(randomSpan);
                 }
 
             } else if (preference.getKey().equals(Const.KEY_BUCKET)) {
                 preference.setSummary(buckets.get(newValue));
+
+            } else if (preference.getKey().equals(Const.KEY_RANDOM_SPAN)) {
+                preference.setSummary(randomSpanEntries.get(newValue));
 
             }
 
